@@ -17,6 +17,8 @@ op = os.path
 DIR = variables['GRAMEXDATA'] + '/apps/mlhandler'
 if not op.isdir(DIR):
     os.mkdir(DIR)
+CURRENT_APP_DIR = op.dirname(__file__)
+REPORT_TEMPLATE = op.join(CURRENT_APP_DIR, "report.html")
 
 
 def init_form(handler):
@@ -53,22 +55,25 @@ def _make_gnb_chart(clf, dfx):
         _ax.set_xlabel(dfx.columns[i])
         _ax.xaxis.set_label_position('top')
     plt.tight_layout()
-    plt.savefig('chart.png')
+    plt.savefig(op.join(CURRENT_APP_DIR, "chart.png"))
 
 
 def _plot_decision_tree(clf, dfx):
     plt.close('all')
     fig, ax = plt.subplots()
     plot_tree(clf, filled=True, ax=ax)
-    plt.savefig('chart.png')
+    plt.savefig(op.join(CURRENT_APP_DIR, "chart.png"))
 
 
 def _make_chart(clf, df):
     if isinstance(clf, (LinearClassifierMixin, nb.MultinomialNB)):
-        with open('linear_model.json', 'r', encoding='utf8') as fout:
+        with open(op.join(CURRENT_APP_DIR, 'linear_model.json'), 'r', encoding='utf8') as fout:
             spec = json.load(fout)
         cdf = pd.DataFrame(clf.coef_, columns=df.columns)
-        cdf['class'] = clf.classes_
+        if clf.classes_.shape[0] == 2:
+            cdf['class'] = clf.classes_.max()
+        else:
+            cdf['class'] = clf.classes_
         cdf = pd.melt(cdf, id_vars='class')
         spec['data']['values'] = cdf.to_dict(orient='records')
         return json.dumps(spec)
@@ -95,7 +100,7 @@ def fit(handler):
             x, y, test_size=test_size, shuffle=True, stratify=y)
     clf.fit(xtrain, ytrain)
     score = clf.score(xtest, ytest)
-    with open('report.html', 'r', encoding='utf8') as fout:
+    with open(REPORT_TEMPLATE, 'r', encoding='utf8') as fout:
         tmpl = Template(fout.read())
     viz = _make_chart(clf, dfx)
     return tmpl.generate(score=score, model=clf, spec=viz)

@@ -31,7 +31,7 @@
         .hover()
         .run()
   {% except (json.JSONDecodeError, TypeError) %}
-    $('#modelchart').html('<img src="chart.png"/>')
+  $('#modelchart').html('<img src="./chart.png"/>')
   {% end %}
 
 </script>
